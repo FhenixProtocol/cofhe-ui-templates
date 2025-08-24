@@ -7,6 +7,7 @@ import { arbitrum, arbitrumSepolia, hardhat, mainnet, sepolia } from "viem/chain
 import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 import { wagmiConfig } from "../wagmi.config";
 import { useCofheStore } from "../store/cofheStore";
+import { useSmartWallet } from "./useSmartWallet";
 
 interface CofheConfig {
   environment: Environment;
@@ -45,6 +46,7 @@ export function useCofhe(config?: Partial<CofheConfig>) {
   const { data: walletClient } = useWalletClient();
   const isChainSupported = useIsConnectedChainSupported();
   const { isInitialized: globalIsInitialized, setIsInitialized: setGlobalIsInitialized } = useCofheStore();
+  const { smartWalletSigner, isReady: smartWalletReady } = useSmartWallet()
 
   const chainId = publicClient?.chain.id;
   const accountAddress = walletClient?.account.address;
@@ -65,9 +67,9 @@ export function useCofhe(config?: Partial<CofheConfig>) {
   useEffect(() => {
     // Skip initialization if not in browser
     if (!isBrowser) return;
+    if (globalIsInitialized || isInitializing || !publicClient || !walletClient || !isChainSupported || !smartWalletReady || !smartWalletSigner) return;
 
     const initialize = async () => {
-      if (globalIsInitialized || isInitializing || !publicClient || !walletClient || !isChainSupported) return;
       try {
         setIsInitializing(true);
 
@@ -85,8 +87,8 @@ export function useCofhe(config?: Partial<CofheConfig>) {
         // Merge default config with user-provided config
         const mergedConfig = { ...defaultConfig, ...config };
         const result = await cofhejs.initializeWithViem({
-          viemClient: publicClient,
-          viemWalletClient: walletClient,
+          viemClient: smartWalletSigner.provider,
+          viemWalletClient: smartWalletSigner, //walletClient,
           environment: mergedConfig.environment,
           verifierUrl: mergedConfig.verifierUrl,
           coFheUrl: mergedConfig.coFheUrl,
@@ -113,7 +115,7 @@ export function useCofhe(config?: Partial<CofheConfig>) {
 
     initialize();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [walletClient, publicClient, config, chainId, isInitializing, accountAddress, isChainSupported, globalIsInitialized, setGlobalIsInitialized]);
+  }, [walletClient, publicClient, config, chainId, accountAddress, isChainSupported, globalIsInitialized, setGlobalIsInitialized, smartWalletReady, smartWalletSigner]);
 
   return {
     isInitialized: globalIsInitialized,
