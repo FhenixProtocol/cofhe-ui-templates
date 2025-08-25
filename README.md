@@ -78,7 +78,7 @@ Once authenticated, you'll see:
 - Smart wallet status
 - A "Test Sponsored Tx" button to test gasless transactions
 
-## Adaptor to Cofhejs
+## Adapter to Cofhejs
 
 `useSmartWallet.ts` contains an adapter function `viemProviderSignerTransformer` for the SmartWalletClient.
 It outputs a signer and provider that fit into the CoFHE.js initializer and keeps the whole flow the same.
